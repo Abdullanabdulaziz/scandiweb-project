@@ -1,0 +1,14 @@
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Prioritize index.html as the default for the root
+DirectoryIndex index.html
+
+# Serve index.php only when accessed directly as an API endpoint
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php [NC]
+RewriteRule ^index\.php$ - [L]
+
+# Redirect all other requests to index.html for React routing
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L,QSA]

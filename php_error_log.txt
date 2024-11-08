@@ -1,0 +1,52 @@
+Received data: 
+Received data: Array
+(
+    [sku] => 1
+    [name] => madmax
+    [price] => 5
+    [productType] => DVD
+    [size] => 1000
+)
+
+Sanitized Data: Array
+(
+    [0] => 1
+    [1] => madmax
+    [2] => 5
+    [3] => DVD
+)
+
+Product saved successfully: DVD Object
+(
+    [sku:protected] => 1
+    [name:protected] => madmax
+    [price:protected] => 5
+    [size:protected] => 1000
+)
+
+Received data: Array
+(
+    [sku] => 2
+    [name] => madmax2
+    [price] => 5
+    [productType] => DVD
+    [size] => 1000
+)
+
+Sanitized Data: Array
+(
+    [0] => 2
+    [1] => madmax2
+    [2] => 5
+    [3] => DVD
+)
+
+Product saved successfully: DVD Object
+(
+    [sku:protected] => 2
+    [name:protected] => madmax2
+    [price:protected] => 5
+    [size:protected] => 1000
+)
+
+Error: Out of range value for column 'height' at row 1
