@@ -1,14 +1,46 @@
 # Enable Rewrite Engine
 RewriteEngine On
 
-# Prioritize index.html as the default for the root
+# Set the default file to index.html
 DirectoryIndex index.html
 
-# Serve index.php only when accessed directly as an API endpoint
+# Allow direct access to index.php for API requests only
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php [NC]
 RewriteRule ^index\.php$ - [L]
 
-# Redirect all other requests to index.html for React routing
+# Redirect all other requests to index.html for React client-side routing
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ /index.html [L,QSA]
+
+# Enable Gzip compression for performance
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/xhtml+xml application/font-woff application/font-woff2 image/svg+xml
+</IfModule>
+
+# Cache control for static assets to reduce load time
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/gif "access plus 1 month"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType text/css "access plus 1 week"
+  ExpiresByType application/javascript "access plus 1 week"
+  ExpiresByType application/font-woff "access plus 1 month"
+  ExpiresByType application/font-woff2 "access plus 1 month"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# CORS headers for API access
+<IfModule mod_headers.c>
+  <FilesMatch "\.(php)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+  </FilesMatch>
+</IfModule>
+
+# Custom error documents
+ErrorDocument 404 /index.html
+ErrorDocument 500 /index.html
