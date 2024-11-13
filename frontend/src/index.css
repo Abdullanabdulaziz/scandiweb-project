@@ -1,0 +1,105 @@
+/* src/index.css */
+
+/* Universal styling */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* General styling */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h5 {
+  font-family: 'Roboto', sans-serif;
+  margin-bottom: 1em;
+}
+
+/* Container styling */
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive padding for smaller screens */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+}
+
+/* Button styling */
+.btn {
+  font-family: 'Roboto', sans-serif;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+  cursor: pointer;
+}
+
+/* Custom styling for delete and add buttons */
+#delete-product-btn {
+  background-color: #E53935;
+  border: none;
+  color: #fff;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  border: none;
+  color: #fff;
+}
+
+/* Button hover and active states */
+#delete-product-btn:hover, .btn-primary:hover {
+  opacity: 0.9;
+}
+
+#delete-product-btn:active, .btn-primary:active {
+  opacity: 0.7;
+}
+
+/* Card styling */
+.card {
+  background-color: #fff;
+  border: 2px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: 'Roboto', sans-serif;
+  margin: 10px 0;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px); /* Slight lift on hover */
+}
+
+.card-body {
+  font-size: 14px;
+  padding: 15px;
+}
+
+/* Checkbox styling */
+.delete-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  accent-color: #4CAF50;
+}
+
+/* Error message styling */
+.error-message {
+  color: #E53935;
+  font-size: 0.9rem;
+  margin-bottom: 1em;
+}

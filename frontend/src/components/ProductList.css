@@ -1,0 +1,31 @@
+/* src/components/ProductList.css */
+
+.product-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .product-card {
+    width: 100%;
+    max-width: 280px;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .product-card:hover {
+    transform: scale(1.02);
+  }
+  
+  .product-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    align-items: center;
+  }
+  
