@@ -2,30 +2,34 @@
 
 namespace App;
 
+use App\Models\DVD;  // Importing specific product types
 use App\Models\Book;
-use App\Models\DVD;
 use App\Models\Furniture;
+use App\Models\Product;  // Import the Product base class
 
 class ProductFactory
 {
-    public static function createProduct($type, $sku, $name, $price, $attributes)
+    public static function createProduct(string $productType, string $sku, string $name, float $price, array $attributes): Product
     {
-        switch (strtolower($type)) {
-            case 'dvd':
-                return new DVD($sku, $name, $price, $attributes['size'] ?? 0);
-            case 'book':
-                return new Book($sku, $name, $price, $attributes['weight'] ?? 0);
-            case 'furniture':
-                return new Furniture(
-                    $sku,
-                    $name,
-                    $price,
-                    $attributes['height'] ?? 0,
-                    $attributes['width'] ?? 0,
-                    $attributes['length'] ?? 0
-                );
-            default:
-                throw new \Exception("Invalid product type: " . $type);
+        // Convert product type to lowercase to ensure case insensitivity
+        $productClass = self::getProductClass(strtolower($productType));
+        
+        return new $productClass($sku, $name, $price, ...array_values($attributes));
+    }
+
+    private static function getProductClass(string $productType): string
+    {
+        // Map product types to their respective classes without conditionals
+        $productClasses = [
+            'dvd' => DVD::class,
+            'book' => Book::class,
+            'furniture' => Furniture::class,
+        ];
+
+        if (!isset($productClasses[$productType])) {
+            throw new \Exception("Invalid product type: $productType");
         }
+
+        return $productClasses[$productType];
     }
 }

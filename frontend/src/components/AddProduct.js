@@ -1,9 +1,10 @@
-// src/components/AddProduct.js
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirect
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const AddProduct = () => {
-  const [product, setProduct] = useState({
+  const navigate = useNavigate(); // Use navigate hook for redirection
+  const [formData, setFormData] = useState({
     sku: '',
     name: '',
     price: '',
@@ -12,82 +13,70 @@ const AddProduct = () => {
     weight: '',
     height: '',
     width: '',
-    length: ''
+    length: '',
   });
 
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setProduct({ ...product, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null); // Clear error on input change
   };
 
-  const validateProductData = () => {
-    if (!product.sku || !product.name || !product.price) {
-      setError('Please fill out all required fields.');
-      return false;
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    if (parseFloat(product.price) <= 0) {
-      setError('Price must be positive.');
-      return false;
-    }
-
-    if (product.productType === 'DVD' && parseInt(product.size) <= 0) {
-      setError('Size must be a positive integer for DVD.');
-      return false;
-    } else if (product.productType === 'Book' && parseFloat(product.weight) <= 0) {
-      setError('Weight must be positive for Book.');
-      return false;
-    } else if (product.productType === 'Furniture') {
-      if (parseFloat(product.height) <= 0 || parseFloat(product.width) <= 0 || parseFloat(product.length) <= 0) {
-        setError('Dimensions must be positive for Furniture.');
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!validateProductData()) return;
-
-    const productData = {
-      sku: product.sku,
-      name: product.name,
-      price: parseFloat(product.price),
-      productType: product.productType,
-      ...(product.productType === 'DVD' && { size: parseInt(product.size) }),
-      ...(product.productType === 'Book' && { weight: parseFloat(product.weight) }),
-      ...(product.productType === 'Furniture' && {
-        height: parseFloat(product.height),
-        width: parseFloat(product.width),
-        length: parseFloat(product.length)
-      })
+    // Construct the payload
+    const payload = {
+      sku: formData.sku,
+      name: formData.name,
+      price: parseFloat(formData.price),
+      productType: formData.productType,
+      attributes: {
+        size: formData.size ? parseInt(formData.size, 10) : null,
+        weight: formData.weight ? parseFloat(formData.weight) : 0, // Default weight to 0 if not provided
+        height: formData.height ? parseFloat(formData.height) : 0, // Default to 0 if not provided
+        width: formData.width ? parseFloat(formData.width) : 0, // Default to 0 if not provided
+        length: formData.length ? parseFloat(formData.length) : 0, // Default to 0 if not provided
+      },
     };
 
     try {
       const response = await fetch('https://scandiwebproject.wuaze.com/save-product.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(productData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload), // Convert payload to JSON string
       });
 
-      if (response.status === 409) throw new Error('SKU must be unique.');
-      if (!response.ok) throw new Error(`Unexpected error: ${response.status}`);
+      if (!response.ok) {
+        throw new Error('Failed to save product');
+      }
 
       const data = await response.json();
+
       if (data.success) {
-        window.location.href = '/';
+        setFormData({
+          sku: '',
+          name: '',
+          price: '',
+          productType: 'DVD',
+          size: '',
+          weight: '',
+          height: '',
+          width: '',
+          length: '',
+        });
+        // Redirect to home page immediately after successful product save
+        navigate('/'); // Redirect to the home page using navigate
       } else {
-        setError(data.message || 'Failed to save product.');
+        setError(`Error: ${data.message}`);
       }
-    } catch (err) {
-      console.error('Error:', err.message);
-      setError(err.message);
+    } catch (error) {
+      console.error('Error:', error.message);
+      setError('Failed to save product');
     }
   };
 
@@ -95,16 +84,14 @@ const AddProduct = () => {
     <div className="container">
       <h1 className="text-center my-4">Add Product</h1>
       {error && <div className="alert alert-danger">{error}</div>}
-
-      <form id="product_form" onSubmit={handleSubmit} className="needs-validation">
-        {/* SKU, Name, Price Fields */}
+      <form onSubmit={handleSubmit}>
         <div className="form-group mb-3">
           <label htmlFor="sku">SKU</label>
           <input
             type="text"
             id="sku"
             name="sku"
-            value={product.sku}
+            value={formData.sku}
             onChange={handleChange}
             className="form-control"
             placeholder="Enter SKU"
@@ -113,12 +100,12 @@ const AddProduct = () => {
         </div>
 
         <div className="form-group mb-3">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="name">Product Name</label>
           <input
             type="text"
             id="name"
             name="name"
-            value={product.name}
+            value={formData.name}
             onChange={handleChange}
             className="form-control"
             placeholder="Enter product name"
@@ -127,30 +114,28 @@ const AddProduct = () => {
         </div>
 
         <div className="form-group mb-3">
-          <label htmlFor="price">Price ($)</label>
+          <label htmlFor="price">Price</label>
           <input
             type="number"
             id="price"
             name="price"
-            value={product.price}
+            value={formData.price}
             onChange={handleChange}
             className="form-control"
             placeholder="Enter price"
-            step="0.01"
+            min="0"
             required
           />
         </div>
 
-        {/* Product Type Selection */}
         <div className="form-group mb-3">
-          <label htmlFor="productType">Type</label>
+          <label htmlFor="productType">Product Type</label>
           <select
             id="productType"
             name="productType"
-            value={product.productType}
+            value={formData.productType}
             onChange={handleChange}
             className="form-control"
-            required
           >
             <option value="DVD">DVD</option>
             <option value="Book">Book</option>
@@ -158,15 +143,14 @@ const AddProduct = () => {
           </select>
         </div>
 
-        {/* Product Type-Specific Fields */}
-        {product.productType === 'DVD' && (
+        {formData.productType === 'DVD' && (
           <div className="form-group mb-3">
             <label htmlFor="size">Size (MB)</label>
             <input
               type="number"
               id="size"
               name="size"
-              value={product.size}
+              value={formData.size}
               onChange={handleChange}
               className="form-control"
               placeholder="Enter size in MB"
@@ -176,14 +160,14 @@ const AddProduct = () => {
           </div>
         )}
 
-        {product.productType === 'Book' && (
+        {formData.productType === 'Book' && (
           <div className="form-group mb-3">
             <label htmlFor="weight">Weight (KG)</label>
             <input
               type="number"
               id="weight"
               name="weight"
-              value={product.weight}
+              value={formData.weight}
               onChange={handleChange}
               className="form-control"
               placeholder="Enter weight in KG"
@@ -193,7 +177,7 @@ const AddProduct = () => {
           </div>
         )}
 
-        {product.productType === 'Furniture' && (
+        {formData.productType === 'Furniture' && (
           <div>
             <div className="form-group mb-3">
               <label htmlFor="height">Height (CM)</label>
@@ -201,7 +185,7 @@ const AddProduct = () => {
                 type="number"
                 id="height"
                 name="height"
-                value={product.height}
+                value={formData.height}
                 onChange={handleChange}
                 className="form-control"
                 placeholder="Enter height in CM"
@@ -215,7 +199,7 @@ const AddProduct = () => {
                 type="number"
                 id="width"
                 name="width"
-                value={product.width}
+                value={formData.width}
                 onChange={handleChange}
                 className="form-control"
                 placeholder="Enter width in CM"
@@ -229,7 +213,7 @@ const AddProduct = () => {
                 type="number"
                 id="length"
                 name="length"
-                value={product.length}
+                value={formData.length}
                 onChange={handleChange}
                 className="form-control"
                 placeholder="Enter length in CM"
@@ -240,8 +224,7 @@ const AddProduct = () => {
           </div>
         )}
 
-        {/* Save and Cancel Buttons */}
-        <button type="submit" className="btn btn-primary">Save</button>
+        <button type="submit" className="btn btn-primary">Save Product</button>
         <button type="button" className="btn btn-secondary ml-2" onClick={() => window.location.href = '/'}>
           Cancel
         </button>

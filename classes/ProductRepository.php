@@ -3,117 +3,76 @@
 namespace App;
 
 use App\Models\Product;
-use mysqli;
 
 class ProductRepository
 {
-    private mysqli $db;
+    private \mysqli $db;
 
-    public function __construct(Database $database)
+    public function __construct(\mysqli $db)
     {
-        $this->db = $database->getConnection();
+        $this->db = $db;
     }
 
     /**
-     * Check if an SKU exists in the database.
+     * Check if the SKU already exists in the database.
      *
      * @param string $sku
      * @return bool
      */
     public function skuExists(string $sku): bool
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM products WHERE sku = ?");
-        if (!$stmt) {
-            throw new \Exception("Failed to prepare statement: " . $this->db->error);
-        }
-        $stmt->bind_param("s", $sku);
+        $stmt = $this->db->prepare("SELECT 1 FROM products WHERE sku = ?");
+        $stmt->bind_param('s', $sku);
         $stmt->execute();
-        $stmt->bind_result($count);
-        $stmt->fetch();
+        $stmt->store_result();
+        $exists = $stmt->num_rows > 0;
         $stmt->close();
-
-        return $count > 0;
+        return $exists;
     }
 
     /**
-     * Save a product to the database.
+     * Save the product into the database.
      *
      * @param Product $product
      */
-    public function saveProduct(Product $product): void
+    public function save(Product $product)
     {
-        $query = "INSERT INTO products (sku, name, price, type, ";
-        $params = [$product->getSku(), $product->getName(), $product->getPrice()];
-
-        if ($product instanceof Models\Book) {
-            $query .= "weight) VALUES (?, ?, ?, 'Book', ?)";
-            $params[] = $product->getWeight();
-        } elseif ($product instanceof Models\DVD) {
-            $query .= "size) VALUES (?, ?, ?, 'DVD', ?)";
-            $params[] = $product->getSize();
-        } elseif ($product instanceof Models\Furniture) {
-            $query .= "height, width, length) VALUES (?, ?, ?, 'Furniture', ?, ?, ?)";
-            $params[] = $product->getHeight();
-            $params[] = $product->getWidth();
-            $params[] = $product->getLength();
-        } else {
-            throw new \Exception("Unsupported product type.");
+        // Check if SKU exists before saving
+        if ($this->skuExists($product->getSku())) {
+            echo json_encode(['success' => false, 'message' => "SKU already exists."]);
+            exit();
         }
 
-        $stmt = $this->db->prepare($query);
-        if (!$stmt) {
-            throw new \Exception("Failed to prepare statement: " . $this->db->error);
+        // Get the insert statement from the polymorphic method of the product
+        $stmt = $product->getInsertStatement($this->db);
+
+        // Get the bind types and bind values from the polymorphic methods
+        $bindTypes = $product->getBindTypes();
+        $bindValues = $product->getBindValues();
+
+        // Ensure that the correct number of bind values is passed
+        if (count($bindValues) !== substr_count($bindTypes, 's') + substr_count($bindTypes, 'd')) {
+            throw new \Exception("Mismatch between number of bind variables and placeholders.");
         }
 
-        // Use a variable for binding parameters
-        $types = str_repeat('s', count($params) - 1) . (count($params) > 3 ? 'd' : 'i'); 
-        $stmt->bind_param($types, ...$params);
+        // Bind the parameters (Now using variables)
+        $stmt->bind_param($bindTypes, ...$bindValues);
+
+        // Execute and close statement
         $stmt->execute();
         $stmt->close();
     }
 
-    /**
-     * Get all products from the database.
-     *
-     * @return array
-     */
-    public function getAllProducts(): array
+    public function getAllProducts()
     {
-        $result = $this->db->query("SELECT * FROM products ORDER BY id");
-        if (!$result) {
-            throw new \Exception("Error retrieving products: " . $this->db->error);
-        }
-
-        $products = [];
-        while ($row = $result->fetch_assoc()) {
-            $products[] = $row;
-        }
-        $result->free();
-
-        return $products;
+        $result = $this->db->query("SELECT sku, name, price, type, size, weight, height, width, length FROM products");
+        return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    /**
-     * Delete products based on an array of IDs.
-     *
-     * @param array $ids
-     */
-    public function deleteProducts(array $ids): void
+    public function delete(string $sku)
     {
-        if (empty($ids)) {
-            return;
-        }
-
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $query = "DELETE FROM products WHERE id IN ($placeholders)";
-        
-        $stmt = $this->db->prepare($query);
-        if (!$stmt) {
-            throw new \Exception("Failed to prepare statement: " . $this->db->error);
-        }
-
-        $types = str_repeat('i', count($ids)); // Assuming 'id' is an integer
-        $stmt->bind_param($types, ...$ids);
+        $stmt = $this->db->prepare("DELETE FROM products WHERE sku = ?");
+        $stmt->bind_param('s', $sku);
         $stmt->execute();
         $stmt->close();
     }

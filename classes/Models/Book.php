@@ -2,60 +2,38 @@
 
 namespace App\Models;
 
-/**
- * Represents a Book product with a weight attribute.
- */
 class Book extends Product
 {
-    /** @var float Weight in kilograms */
-    private float $weight;
+    private $weight; // Weight in KG
 
-    /**
-     * Book constructor.
-     *
-     * @param string $sku Unique SKU for the product
-     * @param string $name Name of the product
-     * @param float $price Price of the product
-     * @param float $weight Weight in kilograms
-     * @throws \Exception
-     */
-    public function __construct(string $sku, string $name, float $price, float $weight)
+    public function __construct(string $sku, string $name, float $price, ?float $weight = 0)
     {
         parent::__construct($sku, $name, $price);
-        $this->setWeight($weight);
+        // If weight is null, default to 0
+        $this->weight = $weight ?? 0;
     }
 
-    /**
-     * Get the weight of the book.
-     *
-     * @return float
-     */
     public function getWeight(): float
     {
         return $this->weight;
     }
 
-    /**
-     * Set the weight of the book.
-     *
-     * @param float $weight
-     * @throws \Exception if weight is negative
-     */
-    public function setWeight(float $weight): void
+    // Implementing the abstract method from Product
+    public function getInsertStatement(\mysqli $db): \mysqli_stmt
     {
-        if ($weight < 0) {
-            throw new \Exception("Weight cannot be negative.");
-        }
-        $this->weight = $weight;
+        // Correct query with 5 placeholders (no size, height, width, length for Book)
+        $query = "INSERT INTO products (sku, name, price, type, weight) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $db->prepare($query);
+        return $stmt;
     }
 
-    /**
-     * Get a specific attribute representation for display purposes.
-     *
-     * @return string
-     */
-    public function getSpecificAttribute(): string
+    public function getBindTypes(): string
     {
-        return "Weight: " . $this->getWeight() . " KG";
+        return 'ssdsd';  // 5 variables are being bound (string, string, double, string, double)
+    }
+
+    public function getBindValues(): array
+    {
+        return [$this->sku, $this->name, $this->price, $this->type, $this->weight];
     }
 }

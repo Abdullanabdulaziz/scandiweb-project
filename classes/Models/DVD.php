@@ -2,60 +2,36 @@
 
 namespace App\Models;
 
-/**
- * Represents a DVD product with a size attribute.
- */
 class DVD extends Product
 {
-    /** @var int Size in MB */
-    private int $size;
+    private $size; // Size in MB
 
-    /**
-     * DVD constructor.
-     *
-     * @param string $sku Unique SKU for the product
-     * @param string $name Name of the product
-     * @param float $price Price of the product
-     * @param int $size Size in MB
-     * @throws \Exception if size is negative
-     */
-    public function __construct(string $sku, string $name, float $price, int $size)
+    public function __construct(string $sku, string $name, float $price, float $size)
     {
         parent::__construct($sku, $name, $price);
-        $this->setSize($size);
+        $this->size = $size;
     }
 
-    /**
-     * Get the size of the DVD.
-     *
-     * @return int
-     */
-    public function getSize(): int
+    public function getSize(): float
     {
         return $this->size;
     }
 
-    /**
-     * Set the size of the DVD.
-     *
-     * @param int $size
-     * @throws \Exception if size is negative
-     */
-    public function setSize(int $size): void
+    public function getInsertStatement(\mysqli $db): \mysqli_stmt
     {
-        if ($size < 0) {
-            throw new \Exception("Size cannot be negative.");
-        }
-        $this->size = $size;
+        // Correct query with 5 placeholders
+        $query = "INSERT INTO products (sku, name, price, type, size) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $db->prepare($query);
+        return $stmt;
     }
 
-    /**
-     * Get a specific attribute representation for display purposes.
-     *
-     * @return string
-     */
-    public function getSpecificAttribute(): string
+    public function getBindTypes(): string
     {
-        return "Size: " . $this->getSize() . " MB";
+        return 'ssdsd';  // 5 variables are being bound (string, string, double, string, double)
+    }
+
+    public function getBindValues(): array
+    {
+        return [$this->sku, $this->name, $this->price, $this->type, $this->size];
     }
 }

@@ -1,7 +1,12 @@
 <?php
-
 header('Content-Type: application/json');
 session_start();
+
+// Enable error reporting for debugging purposes
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once 'vendor/autoload.php';
 
 use App\Database;
@@ -9,40 +14,52 @@ use App\ProductFactory;
 use App\ProductRepository;
 
 try {
-    // Handle incoming data
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Get the raw POST data
+    $input = file_get_contents('php://input');
+    if (!$input) {
+        throw new Exception("No data received.");
+    }
+
+    $data = json_decode($input, true);
+    if (!$data) {
+        throw new Exception("Invalid JSON data received.");
+    }
+
+    // Extract common fields
     $sku = htmlspecialchars(trim($data['sku'] ?? ''));
     $name = htmlspecialchars(trim($data['name'] ?? ''));
     $price = filter_var($data['price'] ?? 0, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     $productType = htmlspecialchars(trim($data['productType'] ?? ''));
-    $attributes = array_filter($data, function ($key) {
-        return !in_array($key, ['sku', 'name', 'price', 'productType']);
-    }, ARRAY_FILTER_USE_KEY);
 
     // Validate required fields
     if (!$sku || !$name || !$price || !$productType) {
-        echo json_encode(['success' => false, 'message' => "Please submit all required data (SKU, Name, Price, and Product Type)."]);
+        echo json_encode(['success' => false, 'message' => "All fields are required (SKU, Name, Price, Product Type)."]);
         exit();
     }
 
+    // Extract specific attributes
+    $attributes = $data['attributes'] ?? [];
+
     // Initialize database and repository
     $db = new Database();
-    $repository = new ProductRepository($db);
+    $repository = new ProductRepository($db->getConnection());
 
-    // Check for unique SKU
+    // Check if SKU already exists
     if ($repository->skuExists($sku)) {
-        echo json_encode(['success' => false, 'message' => "SKU must be unique."]);
+        echo json_encode(['success' => false, 'message' => "SKU already exists."]);
         exit();
     }
 
     // Create and save the product
     $product = ProductFactory::createProduct($productType, $sku, $name, $price, $attributes);
-    $repository->saveProduct($product);
+    $repository->save($product);
 
     echo json_encode(['success' => true, 'message' => "Product saved successfully."]);
-    exit();
-
 } catch (Exception $e) {
+    // Log the error for debugging
+    error_log("Error: " . $e->getMessage());
+
+    // Return the error message as JSON
     echo json_encode(['success' => false, 'message' => "An error occurred: " . $e->getMessage()]);
     exit();
 }

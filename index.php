@@ -20,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 try {
     $db = new Database();
-    $repository = new ProductRepository($db);
+    $mysqli = $db->getConnection();
+    $repository = new ProductRepository($mysqli);
 
     $products = $repository->getAllProducts();
     echo json_encode($products);
