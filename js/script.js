@@ -1,12 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Product Add Page Form Handling
     const productTypeSelect = document.getElementById("productType");
     const dvdFields = document.getElementById("dvd-fields");
     const bookFields = document.getElementById("book-fields");
     const furnitureFields = document.getElementById("furniture-fields");
     const form = document.getElementById("product_form");
 
-    // Inline error display function
     function displayInlineError(message) {
         let errorContainer = document.querySelector(".error-message");
         if (!errorContainer) {
@@ -18,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function () {
         errorContainer.textContent = message;
     }
 
-    // Toggle visibility of product-specific fields
     function toggleFields(type) {
         dvdFields.style.display = "none";
         bookFields.style.display = "none";
@@ -33,10 +30,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Product-specific validation
     function validateProductFields() {
         const productType = productTypeSelect.value;
-        displayInlineError(""); // Clear previous errors
+        displayInlineError("");
 
         if (productType === "DVD" && !document.getElementById("size").value) {
             displayInlineError("Please provide the size for the DVD.");
@@ -58,7 +54,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return true;
     }
 
-    // Initial setup and product type change handler
     if (productTypeSelect) {
         toggleFields(productTypeSelect.value);
 
@@ -66,7 +61,6 @@ document.addEventListener("DOMContentLoaded", function () {
             toggleFields(this.value);
         });
 
-        // Form validation on submit
         form.addEventListener("submit", function (e) {
             if (!validateProductFields()) {
                 e.preventDefault();
@@ -74,22 +68,17 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Mass Delete Handling for Product List Page
     const deleteButton = document.getElementById("delete-product-btn");
     if (deleteButton) {
         deleteButton.addEventListener("click", function () {
             const checkboxes = document.querySelectorAll(".delete-checkbox:checked");
-
-            // Show error if no checkboxes are selected
             if (checkboxes.length === 0) {
                 displayInlineError("Please select products to delete.");
                 return;
             }
 
-            // Collect selected product IDs
             const idsToDelete = Array.from(checkboxes).map((checkbox) => checkbox.value);
 
-            // Send deletion request
             fetch("delete-product.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

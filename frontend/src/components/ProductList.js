@@ -1,7 +1,5 @@
-// src/components/ProductList.js
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import './ProductList.css'; // For additional custom styling
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -9,57 +7,62 @@ const ProductList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch product data from the backend
   useEffect(() => {
-    // Fetch product data from backend
     fetch('https://scandiwebproject.wuaze.com/index.php')
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error('Failed to fetch products');
         }
         return response.json();
       })
-      .then(data => setProducts(data))
-      .catch(error => setError(error.message))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        console.log('Fetched data:', data); // Log the fetched data for debugging
+        if (data && data.products) {
+          setProducts(data.products); // Set products if they exist in the response
+        } else {
+          setError('No products found.');
+        }
+      })
+      .catch((error) => {
+        setError(error.message); // Set error if the fetch fails
+        console.error('Error fetching products:', error);
+      })
+      .finally(() => setLoading(false)); // Stop loading indicator
   }, []);
 
-  // Handle checkbox change: add/remove SKU to/from selectedIds
+  // Handle checkbox change (product selection)
   const handleCheckboxChange = (sku) => {
-    setSelectedIds(prev => prev.includes(sku) ? prev.filter(id => id !== sku) : [...prev, sku]);
+    setSelectedIds((prev) =>
+      prev.includes(sku) ? prev.filter((id) => id !== sku) : [...prev, sku]
+    );
   };
 
   // Handle mass deletion
   const handleMassDelete = () => {
     if (selectedIds.length === 0) {
-      alert("Please select products to delete.");
+      alert('Please select products to delete.');
       return;
     }
 
-    // Send DELETE request to backend with selected SKUs
     fetch('https://scandiwebproject.wuaze.com/delete-product.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: selectedIds }),  // Send selected SKUs for deletion
+      body: JSON.stringify({ ids: selectedIds }),
     })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to delete products');
-        }
-        return response.json();
-      })
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-          // Remove deleted products from UI and clear selected checkboxes
-          setProducts(products.filter(product => !selectedIds.includes(product.sku)));
+          setProducts(products.filter((product) => !selectedIds.includes(product.sku)));
           setSelectedIds([]);
         } else {
           setError('Failed to delete selected products.');
         }
       })
-      .catch(error => setError(error.message));
+      .catch((error) => setError(error.message));
   };
 
-  // Render product attributes based on type (DVD, Book, Furniture)
+  // Render product-specific attributes (e.g., Size, Weight, Dimensions)
   const renderProductAttribute = (product) => {
     switch (product.type) {
       case 'DVD':
@@ -77,14 +80,15 @@ const ProductList = () => {
     <div className="container">
       <h1 className="text-center my-4">Product List</h1>
 
+      {/* Error message */}
       {error && <div className="alert alert-danger text-center">{error}</div>}
 
       {/* Buttons: Add Product and Mass Delete */}
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-primary" onClick={() => window.location.href='/add-product'}>
+        <button className="btn btn-primary" onClick={() => window.location.href = '/add-product'}>
           ADD
         </button>
-        <button id="delete-product-btn" className="btn btn-danger" onClick={handleMassDelete}>
+        <button className="btn btn-danger" onClick={handleMassDelete}>
           MASS DELETE
         </button>
       </div>
@@ -95,7 +99,7 @@ const ProductList = () => {
       ) : (
         <div className="row">
           {products.length > 0 ? (
-            products.map(product => (
+            products.map((product) => (
               <div key={product.sku} className="col-md-4 mb-4">
                 <div className="card">
                   <div className="card-body">
@@ -103,12 +107,12 @@ const ProductList = () => {
                     <input
                       type="checkbox"
                       className="delete-checkbox"
-                      checked={selectedIds.includes(product.sku)}  // Check if the SKU is in the selectedIds
+                      checked={selectedIds.includes(product.sku)} // Check if the SKU is in the selectedIds
                       onChange={() => handleCheckboxChange(product.sku)} // Toggle selection
                     />
                     <h5>SKU: {product.sku}</h5>
                     <p>Name: {product.name}</p>
-                    <p>Price: {product.price} $</p>
+                    <p>Price: {product.price}</p>
                     <p>{renderProductAttribute(product)}</p>
                   </div>
                 </div>

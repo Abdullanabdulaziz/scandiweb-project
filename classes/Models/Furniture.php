@@ -2,50 +2,76 @@
 
 namespace App\Models;
 
-class Furniture extends Product
+class Furniture implements Product
 {
-    private $height, $width, $length; // Dimensions in CM
+    private string $sku;
+    private string $name;
+    private float $price;
+    private float $height;
+    private float $width;
+    private float $length;
+    private string $productType;
 
-    public function __construct(string $sku, string $name, float $price, ?float $height = 0, ?float $width = 0, ?float $length = 0)
+    public function __construct(string $sku, string $name, float $price, float $height, float $width, float $length, string $productType = 'Furniture')
     {
-        parent::__construct($sku, $name, $price);
-        // If height, width, or length is null, default to 0
-        $this->height = $height ?? 0;
-        $this->width = $width ?? 0;
-        $this->length = $length ?? 0;
+        $this->sku = $sku;
+        $this->name = $name;
+        $this->price = $price;
+        $this->height = $height;
+        $this->width = $width;
+        $this->length = $length;
+        $this->productType = $productType;
     }
 
-    public function getHeight(): float
+    public static function createProduct(string $sku, string $name, float $price, array $attributes): Product
     {
-        return $this->height;
+        return new self($sku, $name, $price, $attributes['height'], $attributes['width'], $attributes['length']);
     }
 
-    public function getWidth(): float
+    public function getAttributes(): array
     {
-        return $this->width;
+        return ['height' => $this->height, 'width' => $this->width, 'length' => $this->length];
     }
 
-    public function getLength(): float
+    public function getSku(): string
     {
-        return $this->length;
+        return $this->sku;
     }
 
-    // Implementing the abstract method from Product
-    public function getInsertStatement(\mysqli $db): \mysqli_stmt
+    public function setSku(string $sku): void
     {
-        // Correct query with 7 placeholders (height, width, and length included)
-        $query = "INSERT INTO products (sku, name, price, type, height, width, length) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $db->prepare($query);
-        return $stmt;
+        $this->sku = $sku;
     }
 
-    public function getBindTypes(): string
+    public function getName(): string
     {
-        return 'ssddddd'; // 7 variables are being bound (string, string, double, string, double, double, double)
+        return $this->name;
     }
 
-    public function getBindValues(): array
+    public function setName(string $name): void
     {
-        return [$this->sku, $this->name, $this->price, $this->type, $this->height, $this->width, $this->length];
+        $this->name = $name;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function setPrice(float $price): void
+    {
+        $this->price = $price;
+    }
+
+    // Updated query to include 'type' as the productType
+    public function getInsertQuery(): string
+    {
+        return "INSERT INTO products (sku, name, price, height, width, length, type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    }
+
+    // Bind parameters including the type (productType)
+    public function bindInsertParams(\mysqli_stmt $stmt): void
+    {
+        $stmt->bind_param("ssdddds", $this->sku, $this->name, $this->price, $this->height, $this->width, $this->length, $this->productType);
     }
 }

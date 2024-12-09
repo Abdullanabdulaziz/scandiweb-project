@@ -2,34 +2,21 @@
 
 namespace App;
 
-use App\Models\DVD;  // Importing specific product types
-use App\Models\Book;
-use App\Models\Furniture;
-use App\Models\Product;  // Import the Product base class
+use App\Models\Product;
 
 class ProductFactory
 {
-    public static function createProduct(string $productType, string $sku, string $name, float $price, array $attributes): Product
+    public static function createProduct(string $sku, string $name, float $price, string $productType, array $attributes): Product
     {
-        // Convert product type to lowercase to ensure case insensitivity
-        $productClass = self::getProductClass(strtolower($productType));
-        
-        return new $productClass($sku, $name, $price, ...array_values($attributes));
-    }
+        // Dynamically construct the full class name based on the product type
+        $productClass = 'App\\Models\\' . ucfirst($productType);  // Capitalize the product type
 
-    private static function getProductClass(string $productType): string
-    {
-        // Map product types to their respective classes without conditionals
-        $productClasses = [
-            'dvd' => DVD::class,
-            'book' => Book::class,
-            'furniture' => Furniture::class,
-        ];
-
-        if (!isset($productClasses[$productType])) {
-            throw new \Exception("Invalid product type: $productType");
+        // Check if the class exists and create the product dynamically
+        if (class_exists($productClass)) {
+            return $productClass::createProduct($sku, $name, $price, $attributes);
+        } else {
+            // Error if class doesn't exist
+            throw new \Exception("Class does not exist: " . $productClass);
         }
-
-        return $productClasses[$productType];
     }
 }

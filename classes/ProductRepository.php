@@ -3,77 +3,44 @@
 namespace App;
 
 use App\Models\Product;
+use mysqli;
 
 class ProductRepository
 {
-    private \mysqli $db;
+    private $connection;
 
-    public function __construct(\mysqli $db)
+    public function __construct(mysqli $connection)
     {
-        $this->db = $db;
+        $this->connection = $connection;
     }
 
-    /**
-     * Check if the SKU already exists in the database.
-     *
-     * @param string $sku
-     * @return bool
-     */
-    public function skuExists(string $sku): bool
+    // Method to check if the SKU is unique
+    public function isSkuUnique(string $sku): bool
     {
-        $stmt = $this->db->prepare("SELECT 1 FROM products WHERE sku = ?");
-        $stmt->bind_param('s', $sku);
+        $sql = "SELECT COUNT(*) FROM products WHERE sku = ?";
+        $stmt = $this->connection->prepare($sql);
+        $stmt->bind_param("s", $sku);
         $stmt->execute();
-        $stmt->store_result();
-        $exists = $stmt->num_rows > 0;
-        $stmt->close();
-        return $exists;
+        $stmt->bind_result($count);
+        $stmt->fetch();
+        return $count === 0;
     }
 
-    /**
-     * Save the product into the database.
-     *
-     * @param Product $product
-     */
-    public function save(Product $product)
+    // Save product without conditionals
+    public function saveProduct(Product $product)
     {
-        // Check if SKU exists before saving
-        if ($this->skuExists($product->getSku())) {
-            echo json_encode(['success' => false, 'message' => "SKU already exists."]);
-            exit();
+        // Get the SQL query dynamically from the product
+        $sql = $product->getInsertQuery();  // Each product knows how to build its own query
+
+        $stmt = $this->connection->prepare($sql);  // Prepare the SQL query
+
+        // Bind the product's attributes to the query
+        $product->bindInsertParams($stmt);
+        
+        if ($stmt->execute()) {
+            return true;  // Product saved successfully
+        } else {
+            throw new \Exception("Error saving product: " . $stmt->error);
         }
-
-        // Get the insert statement from the polymorphic method of the product
-        $stmt = $product->getInsertStatement($this->db);
-
-        // Get the bind types and bind values from the polymorphic methods
-        $bindTypes = $product->getBindTypes();
-        $bindValues = $product->getBindValues();
-
-        // Ensure that the correct number of bind values is passed
-        if (count($bindValues) !== substr_count($bindTypes, 's') + substr_count($bindTypes, 'd')) {
-            throw new \Exception("Mismatch between number of bind variables and placeholders.");
-        }
-
-        // Bind the parameters (Now using variables)
-        $stmt->bind_param($bindTypes, ...$bindValues);
-
-        // Execute and close statement
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    public function getAllProducts()
-    {
-        $result = $this->db->query("SELECT sku, name, price, type, size, weight, height, width, length FROM products");
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
-
-    public function delete(string $sku)
-    {
-        $stmt = $this->db->prepare("DELETE FROM products WHERE sku = ?");
-        $stmt->bind_param('s', $sku);
-        $stmt->execute();
-        $stmt->close();
     }
 }

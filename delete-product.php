@@ -1,63 +1,38 @@
 <?php
-require_once 'vendor/autoload.php';
 
-use App\Database;
+require_once 'classes/Database.php';        // Database class
+require_once 'classes/ProductDeleter.php';  // ProductDeleter class
+require_once 'classes/ProductRepository.php'; // ProductRepository class
+
+use App\Database;  // Correct namespace for Database
+use App\ProductDeleter;
 use App\ProductRepository;
 
-header('Access-Control-Allow-Origin: *'); // Replace * with your domain in production
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
 try {
-    // Get the raw POST data
-    $input = json_decode(file_get_contents('php://input'), true);
-
-    // Check if 'ids' parameter is present and is an array
-    if (!isset($input['ids']) || !is_array($input['ids'])) {
-        throw new Exception('Invalid input. Expected an array of product IDs.');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception('Invalid request method.');
     }
 
-    // Extract product IDs (sku or id)
-    $ids = $input['ids'];
-
-    // Check for empty array
-    if (empty($ids)) {
-        throw new Exception('No product IDs provided for deletion.');
+    $data = json_decode(file_get_contents("php://input"), true);
+    if (!$data || !isset($data['ids']) || !is_array($data['ids'])) {
+        throw new Exception('Missing or invalid product IDs.');
     }
 
-    // Initialize Database connection
+    // Get the list of product IDs (SKUs)
+    $ids = $data['ids'];
+
+    // Create a Database connection
     $db = new Database();
-    $productRepository = new ProductRepository($db->getConnection());
 
-    // Prepare the DELETE SQL query for the selected products
-    $stmt = $db->getConnection()->prepare(
-        'DELETE FROM products WHERE sku IN (' . implode(',', array_fill(0, count($ids), '?')) . ')'
-    );
+    // Create a ProductDeleter object
+    $deleter = new ProductDeleter($db->getConnection());
 
-    // Dynamically bind the product IDs (sku) as parameters to the query
-    $stmt->bind_param(str_repeat('s', count($ids)), ...$ids);
+    // Delete the products
+    $result = $deleter->deleteProducts($ids);
 
-    // Execute the DELETE query
-    $stmt->execute();
-
-    // Handle response based on affected rows
-    if ($stmt->affected_rows > 0) {
-        echo json_encode(['success' => true, 'message' => 'Products deleted successfully.']);
-    } elseif ($stmt->affected_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'No matching products found for the provided IDs.']);
-    } else {
-        throw new Exception('Failed to execute the delete query.');
-    }
-
-    $stmt->close();
+    // Return the result as JSON
+    echo json_encode($result);
+    
 } catch (Exception $e) {
-    // If there's an exception, return error message
-    http_response_code(400);  // Bad request
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

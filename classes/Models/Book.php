@@ -2,38 +2,72 @@
 
 namespace App\Models;
 
-class Book extends Product
+class Book implements Product
 {
-    private $weight; // Weight in KG
+    private string $sku;
+    private string $name;
+    private float $price;
+    private float $weight;
+    private string $productType;
 
-    public function __construct(string $sku, string $name, float $price, ?float $weight = 0)
+    public function __construct(string $sku, string $name, float $price, float $weight, string $productType = 'Book')
     {
-        parent::__construct($sku, $name, $price);
-        // If weight is null, default to 0
-        $this->weight = $weight ?? 0;
+        $this->sku = $sku;
+        $this->name = $name;
+        $this->price = $price;
+        $this->weight = $weight;
+        $this->productType = $productType;
     }
 
-    public function getWeight(): float
+    public static function createProduct(string $sku, string $name, float $price, array $attributes): Product
     {
-        return $this->weight;
+        return new self($sku, $name, $price, $attributes['weight']);
     }
 
-    // Implementing the abstract method from Product
-    public function getInsertStatement(\mysqli $db): \mysqli_stmt
+    public function getAttributes(): array
     {
-        // Correct query with 5 placeholders (no size, height, width, length for Book)
-        $query = "INSERT INTO products (sku, name, price, type, weight) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $db->prepare($query);
-        return $stmt;
+        return ['weight' => $this->weight];
     }
 
-    public function getBindTypes(): string
+    public function getSku(): string
     {
-        return 'ssdsd';  // 5 variables are being bound (string, string, double, string, double)
+        return $this->sku;
     }
 
-    public function getBindValues(): array
+    public function setSku(string $sku): void
     {
-        return [$this->sku, $this->name, $this->price, $this->type, $this->weight];
+        $this->sku = $sku;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function setPrice(float $price): void
+    {
+        $this->price = $price;
+    }
+
+    // Updated query to include 'type' as the productType
+    public function getInsertQuery(): string
+    {
+        return "INSERT INTO products (sku, name, price, weight, type) VALUES (?, ?, ?, ?, ?)";
+    }
+
+    // Bind parameters including the type (productType)
+    public function bindInsertParams(\mysqli_stmt $stmt): void
+    {
+        $stmt->bind_param("ssdds", $this->sku, $this->name, $this->price, $this->weight, $this->productType);
     }
 }

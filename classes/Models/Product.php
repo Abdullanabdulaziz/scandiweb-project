@@ -2,42 +2,18 @@
 
 namespace App\Models;
 
-abstract class Product
+interface Product
 {
-    protected $sku;
-    protected $name;
-    protected $price;
-    protected $type;
+    // Instance methods for accessing product details
+    public function getAttributes(): array;
+    public function getSku(): string;
+    public function setSku(string $sku): void;
+    public function getName(): string;
+    public function setName(string $name): void;
+    public function getPrice(): float;
+    public function setPrice(float $price): void;
 
-    public function __construct(string $sku, string $name, float $price)
-    {
-        $this->sku = $sku;
-        $this->name = $name;
-        $this->price = $price;
-        $this->type = get_class($this);
-    }
-
-    abstract public function getInsertStatement(\mysqli $db): \mysqli_stmt;
-    abstract public function getBindTypes(): string;
-    abstract public function getBindValues(): array;
-
-    public function getSku(): string
-    {
-        return $this->sku;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function getPrice(): float
-    {
-        return $this->price;
-    }
-
-    public function getType(): string
-    {
-        return $this->type;
-    }
+    // Methods for handling database insertion
+    public function getInsertQuery(): string;
+    public function bindInsertParams(\mysqli_stmt $stmt): void;
 }
